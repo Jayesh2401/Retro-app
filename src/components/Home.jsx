@@ -160,7 +160,21 @@ const Home = ({ user }) => {
 
         if (column.items && column.items.length > 0) {
           column.items.forEach((item, index) => {
+            // Add item text
             textContent += `${index + 1}. ${item.text}\n`;
+            
+            // Add reactions if they exist
+            const likeCount = item.reactions ? Object.keys(item.reactions).length : 0;
+            const dislikeCount = item.dislikes ? Object.keys(item.dislikes).length : 0;
+            
+            if (likeCount > 0 || dislikeCount > 0) {
+              textContent += `   Reactions: 👍 ${likeCount} | 👎 ${dislikeCount}\n`;
+            }
+            
+            // Add action if it exists
+            if (item.action) {
+              textContent += `   ACTION: ${item.action}\n`;
+            }
           });
         } else {
           textContent += 'No items in this column.\n';
@@ -219,7 +233,21 @@ const Home = ({ user }) => {
 
         if (column.items && column.items.length > 0) {
           column.items.forEach((item, index) => {
+            // Add item text
             textContent += `${index + 1}. ${item.text}\n`;
+            
+            // Add reactions if they exist
+            const likeCount = item.reactions ? Object.keys(item.reactions).length : 0;
+            const dislikeCount = item.dislikes ? Object.keys(item.dislikes).length : 0;
+            
+            if (likeCount > 0 || dislikeCount > 0) {
+              textContent += `   Reactions: 👍 ${likeCount} | 👎 ${dislikeCount}\n`;
+            }
+            
+            // Add action if it exists
+            if (item.action) {
+              textContent += `   ACTION: ${item.action}\n`;
+            }
           });
         } else {
           textContent += 'No items in this column.\n';
