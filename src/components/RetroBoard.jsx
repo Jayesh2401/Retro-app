@@ -39,7 +39,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable Item Component
-const SortableItem = ({ id, item, columnId, handleReaction, deleteItem, user }) => {
+const SortableItem = ({ id, item, columnId, handleReaction, deleteItem, addAction, user }) => {
   const {
     attributes,
     listeners,
@@ -88,6 +88,13 @@ const SortableItem = ({ id, item, columnId, handleReaction, deleteItem, user }) 
             <FaThumbsDown />
             <span>{Object.keys(item.dislikes || {}).length}</span>
           </button>
+          <button
+            onClick={() => addAction(columnId, item.id)}
+            className="action-button"
+            title="Add Action Item"
+          >
+            <FaTools />
+          </button>
         </div>
         {item.createdBy === user.uid && (
           <button
@@ -98,6 +105,8 @@ const SortableItem = ({ id, item, columnId, handleReaction, deleteItem, user }) 
           </button>
         )}
       </div>
+        {item.action && <p className="item-action"><strong>Action:</strong> {item.action}</p>}
+
     </div>
   );
 };
@@ -117,6 +126,8 @@ const RetroBoard = ({ user }) => {
   // eslint-disable-next-line no-unused-vars
   const [contentVisible, setContentVisible] = useState(true);
   const timerRef = useRef(null);
+  const [actionItem, setActionItem] = useState({ columnId: '', itemId: '', text: '' });
+  const [showActionModal, setShowActionModal] = useState(false);
 
   // Set up sensors for drag and drop
   const sensors = useSensors(
@@ -479,6 +490,40 @@ const RetroBoard = ({ user }) => {
     }
   };
 
+  const addAction = (columnId, itemId) => {
+    // Find the current action text if it exists
+    const column = board.columns[columnId];
+    const item = column.items.find(item => item.id === itemId);
+    const currentAction = item.action || '';
+    
+    setActionItem({ columnId, itemId, text: currentAction });
+    setShowActionModal(true);
+  };
+
+  const saveAction = async () => {
+    try {
+      // Clone the current board state
+      const updatedBoard = { ...board };
+      const column = updatedBoard.columns[actionItem.columnId];
+      const itemIndex = column.items.findIndex(item => item.id === actionItem.itemId);
+
+      if (itemIndex === -1) return;
+
+      // Update the item with the action
+      column.items[itemIndex].action = actionItem.text;
+
+      // Update the board in Firestore
+      await updateDoc(doc(db, 'boards', boardId), {
+        columns: updatedBoard.columns
+      });
+
+      // Close the modal
+      setShowActionModal(false);
+    } catch (error) {
+      console.error('Error saving action:', error);
+    }
+  };
+
   const copyShareLink = () => {
     navigator.clipboard.writeText(shareUrl);
     alert('Share link copied to clipboard!');
@@ -549,6 +594,28 @@ const RetroBoard = ({ user }) => {
           </form>
         </div>
 
+        {/* Action Modal */}
+        {showActionModal && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h2>Add Action Item</h2>
+              <textarea
+                value={actionItem.text}
+                onChange={(e) => setActionItem({ ...actionItem, text: e.target.value })}
+                placeholder="What action should be taken?"
+                rows={4}
+              />
+              <div className="modal-buttons">
+                <button onClick={() => setShowActionModal(false)} className="cancel-button">
+                  Cancel
+                </button>
+                <button onClick={saveAction} className="save-button">
+                  Save Action
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <DndContext
           sensors={sensors}
@@ -597,12 +664,13 @@ const RetroBoard = ({ user }) => {
                             columnId={columnId}
                             handleReaction={handleReaction}
                             deleteItem={deleteItem}
+                            addAction={addAction}
                             user={user}
                           />
                         ))
                       ) : (
                         <div className="empty-column-placeholder" id={`empty::${columnId}`}>
-                          <p>Drag items here or add a new item</p>
+                          <p>Add a new item</p>
                         </div>
                       )}
                     </SortableContext>
